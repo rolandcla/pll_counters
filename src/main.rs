@@ -1,6 +1,6 @@
+use std::cmp::Ordering;
 use std::cmp::{max, min};
 use std::collections::BTreeMap;
-use std::cmp::Ordering;
 
 const R_MIN: u32 = 1;
 const R_MAX: u32 = 16383;
@@ -9,7 +9,6 @@ const N_MAX: u32 = 524287;
 const K_MIN: u32 = 25;
 const K_MAX: u32 = 50;
 const F_REF: u32 = 40_000_000;
-
 
 struct Freq(f64);
 impl PartialEq for Freq {
@@ -29,19 +28,21 @@ impl Ord for Freq {
     }
 }
 
-
-
 fn strip_n(n: u32) -> u32 {
     min(N_MAX, max(N_MIN, n))
 }
 
-// fn gcd(a: u32, b: u32) -> u32 {
-//     if b == 0 {
-//         a
-//     } else {
-//         gcd(b, a % b)
-//     }
-// }
+fn gcd(a: u32, b: u32) -> u32 {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
+}
+
+fn are_coprime(a: u32, b: u32) -> bool {
+    gcd(a,b) == 1
+}
 
 fn abs(x: f64) -> f64 {
     if x > 0.0 {
@@ -56,12 +57,12 @@ fn count() -> u32 {
     for r in R_MIN..=R_MAX {
         let n0 = strip_n(r * K_MIN);
         let n1 = strip_n(r * K_MAX);
-        cnt += n1 - n0 + 1;
-        // for n in n0..=n1 {
-        //     if gcd(n, r) == 1 {
-        //         cnt += 1;
-        //     }
-        // } // 1511106787
+        //cnt += n1 - n0 + 1;
+        for n in n0..=n1 {
+            if are_coprime(n, r) {
+                cnt += 1;
+            }
+        } // 1511106787
     }
     cnt
 }
@@ -96,16 +97,12 @@ fn solutions_near(freq: f64) {
         let k1 = freq1 / { F_REF as f64 };
         for r in R_MIN..=R_MAX {
             let r_f64 = r as f64;
-            let n0 = strip_n((r_f64 * k0).round() as u32);
-            let n1 = strip_n((r_f64 * k1).round() as u32);
+            let n0 = max(N_MIN, (r_f64 * k0).ceil() as u32);
+            let n1 = min(N_MAX, (r_f64 * k1).floor() as u32);
             for n in n0..=n1 {
                 let r_freq = { F_REF as f64 } * { n as f64 } / { r as f64 };
-                if r_freq < freq0 || r_freq > freq1 {
-                    continue;
-                }
-                let ffreq = Freq(r_freq);
-                if ! solutions.contains_key(&ffreq) {
-                    solutions.insert(ffreq, (r, n));
+                if !solutions.contains_key(&Freq(r_freq)) {
+                    solutions.insert(Freq(r_freq), (r, n));
                 }
             }
         }
@@ -135,7 +132,7 @@ fn print_best_r_n(freq: f64) {
 }
 
 fn main() {
-    println!("count: {}", count());
+    //println!("count: {}", count());
 
     print_best_r_n(1.21477e9);
     print_best_r_n(1.214771e9);
@@ -146,9 +143,9 @@ fn main() {
     //solutions_near(1e9);
     //solutions_near(1.5e9);
     solutions_near(1.654321e9);
+    println!("");
     print_best_r_n(1e9);
     print_best_r_n(2e9);
-
     print_best_r_n(1_000_001_000.0);
     print_best_r_n(1_000_002_000.0);
     print_best_r_n(1_000_003_000.0);
